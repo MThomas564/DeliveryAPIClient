@@ -1,0 +1,47 @@
+# Build output
+bin/
+obj/
+out/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.assets.json
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docview
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dotnet tools
+.config/dotnet-tools.json
+
+# Claude
+.claude/
+.claude-flow/
+
+# Publish profiles
+**/Properties/PublishProfiles/
+PublishScripts/
