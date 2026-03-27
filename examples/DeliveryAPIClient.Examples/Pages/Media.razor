@@ -1,0 +1,92 @@
+@page "/media"
+@inject IMediaService MediaService
+
+<h2>Media Browser</h2>
+<p class="muted">Browse media items from the Umbraco Media Delivery API.</p>
+
+<div style="margin-bottom:1rem">
+    <input @bind="fetchParam" placeholder="children:/" style="width:200px" />
+    <input @bind="filterParam" placeholder="mediaType:Image" style="width:180px" />
+    <button @onclick="FetchMedia">Fetch</button>
+</div>
+
+@if (loading)
+{
+    <p>Loading…</p>
+}
+else if (error is not null)
+{
+    <div class="error">@error</div>
+}
+else if (result is not null)
+{
+    <p class="muted">Showing @result.Items.Count of @result.Total items.</p>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:1rem">
+        @foreach (var media in result.Items)
+        {
+            <div class="card">
+                <MediaImage Media="media" ShowDetails="true" Width="200" />
+                <p style="margin:0.5rem 0 0"><strong>@media.Name</strong></p>
+                <p class="muted" style="margin:0">@media.MediaType · @media.Extension</p>
+                @if (media.Crops?.Count > 0)
+                {
+                    <p class="muted" style="margin:0">
+                        Crops: @string.Join(", ", media.Crops.Select(c => c.Alias ?? $"{c.Width}x{c.Height}"))
+                    </p>
+                }
+            </div>
+        }
+    </div>
+
+    <div style="margin-top:1rem; display:flex; gap:0.5rem; align-items:center">
+        <button @onclick="Prev" disabled="@(skip == 0)">← Prev</button>
+        <span class="muted">Page @(skip / take + 1)</span>
+        <button @onclick="Next" disabled="@(skip + take >= result.Total)">Next →</button>
+    </div>
+}
+
+@code {
+    private string fetchParam = "children:/";
+    private string filterParam = "mediaType:Image";
+    private bool loading;
+    private string? error;
+    private PagedResponse<ApiMediaWithCropsResponseModel>? result;
+    private int skip = 0;
+    private const int take = 12;
+
+    protected override async Task OnInitializedAsync() => await FetchMedia();
+
+    private async Task FetchMedia()
+    {
+        loading = true;
+        error = null;
+
+        try
+        {
+            var filter = string.IsNullOrWhiteSpace(filterParam)
+                ? null
+                : new List<string> { filterParam };
+
+            result = await MediaService.GetMediaAsync(new MediaQueryParameters
+            {
+                Fetch  = fetchParam,
+                Filter = filter,
+                Skip   = skip,
+                Take   = take,
+                Expand = "properties[$all]"
+            });
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task Prev() { skip = Math.Max(0, skip - take); await FetchMedia(); }
+    private async Task Next() { skip += take; await FetchMedia(); }
+}

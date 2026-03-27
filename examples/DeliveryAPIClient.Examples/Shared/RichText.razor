@@ -1,0 +1,78 @@
+@*
+    Renders an Umbraco RichTextModel as HTML.
+
+    Basic usage (no blocks):
+        <RichText Content="post.BodyText" />
+
+    With block rendering:
+        <RichText Content="post.BodyText">
+            <BlockTemplate Context="block">
+                @if (block.Content.ContentType == "callout")
+                {
+                    <div class="callout">@block.Content.GetProperty<string>("text")</div>
+                }
+            </BlockTemplate>
+        </RichText>
+
+    Blocks in the markup are rendered as:
+        <div data-umb-block="guid" data-content-type="alias"></div>
+    When a BlockTemplate is provided those divs are replaced with the rendered fragment.
+*@
+
+@if (Content is not null)
+{
+    @if (Content.HasBlocks && BlockTemplate is not null)
+    {
+        @RenderWithBlocks()
+    }
+    else
+    {
+        @((MarkupString)Content.ToHtml())
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public RichTextModel? Content { get; set; }
+
+    /// <summary>
+    /// Optional render fragment for embedded blocks. Receives the RichTextBlockModel.
+    /// When provided, umb-rte-block placeholders are replaced with this fragment.
+    /// </summary>
+    [Parameter] public RenderFragment<RichTextBlockModel>? BlockTemplate { get; set; }
+
+    private RenderFragment RenderWithBlocks() => builder =>
+    {
+        if (Content is null) return;
+
+        // Split the HTML on block placeholder divs and interleave block fragments
+        var html = Content.ToHtml();
+        var blocks = Content.Blocks ?? [];
+
+        var remaining = html;
+        var seq = 0;
+
+        foreach (var block in blocks)
+        {
+            var placeholder = $"""<div data-umb-block="{block.Content.Id}"></div>""";
+            var idx = remaining.IndexOf(placeholder, StringComparison.Ordinal);
+
+            if (idx < 0) continue;
+
+            // Render HTML before the block
+            if (idx > 0)
+            {
+                var before = remaining[..idx];
+                builder.AddContent(seq++, (MarkupString)before);
+            }
+
+            // Render the block using the template
+            builder.AddContent(seq++, BlockTemplate!(block));
+
+            remaining = remaining[(idx + placeholder.Length)..];
+        }
+
+        // Render any trailing HTML
+        if (!string.IsNullOrEmpty(remaining))
+            builder.AddContent(seq, (MarkupString)remaining);
+    };
+}

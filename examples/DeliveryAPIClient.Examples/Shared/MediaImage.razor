@@ -1,0 +1,28 @@
+@* Renders an Umbraco media item as an <img>, with optional crop selection. *@
+
+@if (Media is not null)
+{
+    <figure>
+        <img src="@Media.Url"
+             alt="@Media.Name"
+             width="@(Width ?? Media.Width)"
+             height="@(Height ?? Media.Height)" />
+        @if (ShowDetails)
+        {
+            <figcaption class="muted">
+                @Media.Name — @Media.Width×@Media.Height @Media.Extension
+                @if (Media.FocalPoint is { } fp)
+                {
+                    <span> · focal: (@fp.Left.ToString("F2"), @fp.Top.ToString("F2"))</span>
+                }
+            </figcaption>
+        }
+    </figure>
+}
+
+@code {
+    [Parameter, EditorRequired] public ApiMediaWithCropsResponseModel? Media { get; set; }
+    [Parameter] public bool ShowDetails { get; set; } = true;
+    [Parameter] public int? Width { get; set; }
+    [Parameter] public int? Height { get; set; }
+}

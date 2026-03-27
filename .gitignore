@@ -38,6 +38,9 @@ Thumbs.db
 # dotnet tools
 .config/dotnet-tools.json
 
+# Local config overrides
+appsettings.local.json
+
 # Claude
 .claude/
 .claude-flow/

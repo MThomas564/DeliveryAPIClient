@@ -1,0 +1,104 @@
+@page "/"
+@inject IContentService ContentService
+
+<h2>Content Browser</h2>
+<p class="muted">Fetch content items from the Umbraco Delivery API and inspect their properties.</p>
+
+<div style="margin-bottom:1rem">
+    <input @bind="path" placeholder="/your-page-path" style="width:260px" />
+    <button @onclick="FetchContent">Fetch</button>
+</div>
+
+@if (loading)
+{
+    <p>Loading…</p>
+}
+else if (error is not null)
+{
+    <div class="error">@error</div>
+}
+else if (item is not null)
+{
+    <div class="card">
+        <h3>@item.Name</h3>
+        <p class="muted">
+            <strong>Type:</strong> @item.ContentType &nbsp;|&nbsp;
+            <strong>ID:</strong> @item.Id &nbsp;|&nbsp;
+            <strong>Path:</strong> @item.Route.Path
+        </p>
+        <p class="muted">Updated: @item.UpdateDate.ToString("g")</p>
+
+        @if (images.Count > 0)
+        {
+            <h4>Images (@images.Count)</h4>
+            @foreach (var (alias, media) in images)
+            {
+                <p><strong>@alias</strong></p>
+                <MediaImage Media="media" ShowDetails="true" />
+            }
+        }
+
+        <h4>Properties (@item.Properties.Count)</h4>
+        <table style="width:100%; border-collapse:collapse; font-size:0.9em">
+            <thead>
+                <tr style="text-align:left; border-bottom:1px solid #ddd">
+                    <th style="padding:4px 8px">Alias</th>
+                    <th style="padding:4px 8px">Value (raw JSON)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var prop in item.Properties)
+                {
+                    <tr style="border-bottom:1px solid #f0f0f0">
+                        <td style="padding:4px 8px; font-family:monospace">@prop.Key</td>
+                        <td style="padding:4px 8px; font-family:monospace; word-break:break-all">
+                            @(prop.Value?.ToString() ?? "null")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (fetched)
+{
+    <p class="muted">No content found at <code>@path</code>.</p>
+}
+
+@code {
+    private string path = "/";
+    private bool loading;
+    private bool fetched;
+    private string? error;
+    private ApiContentResponseModel? item;
+    private List<(string Alias, ApiMediaWithCropsResponseModel Media)> images = [];
+
+    private async Task FetchContent()
+    {
+        loading = true;
+        error = null;
+        item = null;
+        images = [];
+        fetched = false;
+
+        try
+        {
+            item = await ContentService.GetContentByPathAsync(path);
+            if (item is not null)
+                images = item.GetAllImageProperties().ToList();
+        }
+        catch (DeliveryApiException ex)
+        {
+            error = $"API error {ex.StatusCode}: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}. Check that BaseUrl is configured and Umbraco CORS allows this origin.";
+        }
+        finally
+        {
+            loading = false;
+            fetched = true;
+        }
+    }
+}

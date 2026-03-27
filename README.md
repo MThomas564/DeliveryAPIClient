@@ -261,6 +261,184 @@ public class MyService(IDeliveryApiClient client)
 
 ---
 
+## Supported Property Types
+
+All Umbraco property values live in the `Properties` dictionary as `JsonElement?`. The helper methods on `ContentItemBase` wrap `GetProperty<T>()` for typed access. Simple types work directly; complex types have dedicated helpers and models.
+
+### Simple types — use `GetProperty<T>()`
+
+| Umbraco editor | C# type | Example |
+|---|---|---|
+| Textstring, Textarea, Label, Email | `string?` | `GetProperty<string>("title")` |
+| Numeric | `decimal?` | `GetProperty<decimal>("price")` |
+| True/False | `bool?` | `GetProperty<bool>("isFeatured")` |
+| Date Picker | `DateTime?` | `GetProperty<DateTime>("publishDate")` |
+| Slider (single value) | `decimal?` | `GetProperty<decimal>("rating")` |
+| Tags, Checkboxes | `string[]?` | `GetProperty<string[]>("tags")` |
+| Dropdown (single) | `string?` | `GetProperty<string>("status")` |
+| Dropdown (multiple) | `string[]?` | `GetProperty<string[]>("categories")` |
+| Radio button list | `string?` | `GetProperty<string>("layout")` |
+| Repeatable textstrings | `string[]?` | `GetProperty<string[]>("bullets")` |
+
+### Complex types — dedicated helpers and models
+
+| Umbraco editor | Helper method | Returns |
+|---|---|---|
+| Media Picker (single) | `GetImageProperty("alias")` | `ApiMediaWithCropsResponseModel?` |
+| Media Picker (multiple) | `GetMultipleImageProperty("alias")` | `List<ApiMediaWithCropsResponseModel>?` |
+| Image Cropper *(standalone)* | `GetImageCropperProperty("alias")` | `ImageCropperModel?` |
+| Content Picker (single) | `GetContentProperty("alias")` | `ApiContentResponseModel?` |
+| Multi-node Tree Picker | `GetMultipleContentProperty("alias")` | `List<ApiContentResponseModel>?` |
+| Rich Text Editor | `GetRichTextProperty("alias")` | `RichTextModel?` |
+| Block List | `GetBlockListProperty("alias")` | `List<BlockItemModel>?` |
+| Block Grid | `GetBlockGridProperty("alias")` | `BlockGridModel?` |
+| Link Picker (single) | `GetLinkProperty("alias")` | `LinkModel?` |
+| Multi-URL Picker | `GetLinksProperty("alias")` | `List<LinkModel>?` |
+| Color Picker | `GetColorPickerProperty("alias")` | `ColorPickerModel?` |
+
+> **Note:** Content Picker and Media Picker return minimal reference objects by default. Pass `expand=properties[$all]` to get full inline data for linked items.
+
+> **Note:** Nested Content (legacy editor) returns `List<ApiContentResponseModel>` — use `GetMultipleContentProperty`.
+
+### Key models
+
+**`ApiMediaWithCropsResponseModel`** — Media item with image data:
+```csharp
+media.Url          // "/media/abc/photo.jpg"
+media.Width        // 1920
+media.Height       // 1080
+media.Extension    // "jpg"
+media.FocalPoint   // ImageFocalPointModel { Left, Top }
+media.Crops        // List<ImageCropModel> { Alias, Width, Height, Coordinates }
+```
+
+**`LinkModel`** — Multi-URL Picker / Link Picker:
+```csharp
+link.Url           // "/about" or "https://example.com"
+link.Name          // "About us"
+link.Target        // "_blank" or null
+link.IsExternal    // false
+link.OpensInNewTab // false
+```
+
+**`RichTextModel`** — Rich Text Editor:
+```csharp
+body.ToHtml()              // rendered HTML string
+body.HasBlocks             // true if contains embedded blocks
+body.GetBlock(contentId)   // RichTextBlockModel?
+```
+
+**`BlockItemModel`** — Block List item:
+```csharp
+block.Content.ContentType  // "callout"
+block.Content.Properties   // Dictionary<string, JsonElement?>
+block.Settings             // ApiContentResponseModel? (optional settings block)
+```
+
+**`BlockGridModel`** — Block Grid:
+```csharp
+grid.GridColumns           // 12
+grid.Items                 // List<BlockGridItem>
+item.ColumnSpan            // 6
+item.RowSpan               // 1
+item.Areas                 // List<BlockGridArea>
+item.Content               // ApiContentResponseModel
+```
+
+**`ColorPickerModel`** — Color Picker:
+```csharp
+color.Color  // "#FF0000"
+color.Label  // "Red"
+```
+
+**`ImageCropperModel`** — standalone Image Cropper:
+```csharp
+cropper.Src             // "/media/abc/image.jpg"
+cropper.FocalPoint      // ImageFocalPointModel?
+cropper.Crops           // List<ImageCropModel>?
+cropper.GetCropUrl("thumbnail")
+```
+
+---
+
+## Known Limitations & Umbraco API Constraints
+
+These are deliberate restrictions in the Umbraco Delivery API itself — not limitations of this SDK.
+
+### ⚠️ Member Picker is blocked by design
+
+The Umbraco Delivery API **intentionally does not expose Member Picker properties**. This is a security decision by the Umbraco team to prevent member data (emails, passwords, personal information) from leaking through the headless API.
+
+> "The Member Picker property editor is not supported in the Delivery API to avoid the risk of leaking member data."
+> — Umbraco Documentation
+
+**This applies regardless of:**
+- Whether you supply an `Api-Key`
+- Whether Preview mode is enabled
+- Any server-side configuration
+
+A member picker property will always return `null`. There is no configuration to change this.
+
+#### The recommended pattern for "author" data
+
+Since Author is not a built-in Umbraco content type, **you need to create one**. Use a Content Picker (not Member Picker) to link it:
+
+**Step 1 — Create an Author document type in Umbraco backoffice:**
+
+| Property alias | Type        | Notes                    |
+|----------------|-------------|--------------------------|
+| `displayName`  | Textstring  |                          |
+| `bio`          | Textarea    |                          |
+| `jobTitle`     | Textstring  |                          |
+| `photo`        | Media Picker | Image only              |
+
+**Step 2 — Create author content nodes** under a `/authors` root in the content tree.
+
+**Step 3 — On your BlogPost document type**, add a property:
+- Alias: `author`
+- Type: **Content Picker** (not Member Picker)
+- Allowed content types: Author
+
+**Step 4 — In your typed model:**
+
+```csharp
+public class BlogPost : ContentItemBase
+{
+    // Author comes back as a nested ApiContentResponseModel when expanded,
+    // and can be projected to a typed AuthorContent model.
+    public AuthorContent? Author
+    {
+        get
+        {
+            var raw = GetProperty<ApiContentResponseModel>("author");
+            return raw?.As<AuthorContent>();
+        }
+    }
+}
+
+public class AuthorContent : ContentItemBase
+{
+    public string? DisplayName => GetProperty<string>("displayName");
+    public string? Bio         => GetProperty<string>("bio");
+    public string? JobTitle    => GetProperty<string>("jobTitle");
+    public ApiMediaWithCropsResponseModel? Photo => GetImageProperty("photo");
+}
+```
+
+**Step 5 — Fetch with expansion** so the linked author is inlined:
+
+```csharp
+var post = await contentService.GetContentByPathAsync<BlogPost>(
+    "/blog/my-post",
+    parameters: new ContentQueryParameters { Expand = "properties[$all]" }
+);
+
+Console.WriteLine(post?.Author?.DisplayName);  // "Jane Smith"
+Console.WriteLine(post?.Author?.Photo?.Url);   // "/media/.../jane.jpg"
+```
+
+---
+
 ## Error Handling
 
 Non-success responses throw `DeliveryApiException`. 404s on single-item endpoints return `null`.

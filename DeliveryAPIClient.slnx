@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/DeliveryAPIClient.Examples/DeliveryAPIClient.Examples.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/DeliveryAPIClient/DeliveryAPIClient.csproj" />
   </Folder>

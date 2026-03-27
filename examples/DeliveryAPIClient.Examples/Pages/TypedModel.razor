@@ -1,0 +1,137 @@
+@page "/typed"
+@inject IContentService ContentService
+
+<h2>Typed Model Demo</h2>
+<p class="muted">
+    Demonstrates subclassing <code>ContentItemBase</code> to create a strongly-typed content model.
+    The <code>BlogPost</code> class exposes typed properties backed by <code>GetProperty&lt;T&gt;</code>.
+</p>
+
+<div style="margin-bottom:1rem">
+    <input @bind="path" placeholder="/blog/my-post" style="width:260px" />
+    <button @onclick="Fetch">Fetch as BlogPost</button>
+</div>
+
+@if (loading)
+{
+    <p>Loading…</p>
+}
+else if (error is not null)
+{
+    <div class="error">@error</div>
+}
+else if (post is not null)
+{
+    <div class="card">
+        <h3>@(post.Title ?? post.Name)</h3>
+
+        @if (post.Published.HasValue)
+        {
+            <p class="muted">Published: @post.Published.Value.ToString("D")</p>
+        }
+
+        @if (post.Tags?.Length > 0)
+        {
+            <p>@foreach (var tag in post.Tags) { <span class="tag">@tag</span> }</p>
+        }
+
+        @if (post.HeroImage is { } hero)
+        {
+            <MediaImage Media="hero" ShowDetails="true" />
+        }
+
+        @if (!string.IsNullOrEmpty(post.Summary))
+        {
+            <p>@post.Summary</p>
+        }
+
+        @if (post.BodyText is { } body)
+        {
+            <h4>Body <span class="muted">(rich text — @(body.HasBlocks ? $"{body.Blocks!.Count} embedded block(s)" : "no blocks"))</span></h4>
+            <div style="border:1px solid #eee; border-radius:4px; padding:1rem">
+                <RichText Content="body">
+                    <BlockTemplate Context="block">
+                        <div style="background:#f0f4ff; border-left:3px solid #1a1a2e; padding:0.75rem; margin:0.5rem 0">
+                            <p class="muted" style="margin:0 0 0.25rem"><strong>Block:</strong> @block.Content.ContentType (@block.Content.Id)</p>
+                            @foreach (var prop in block.Content.Properties)
+                            {
+                                <p style="margin:0; font-family:monospace; font-size:0.85em">@prop.Key: @prop.Value</p>
+                            }
+                        </div>
+                    </BlockTemplate>
+                </RichText>
+            </div>
+        }
+
+        <details style="margin-top:1rem">
+            <summary class="muted">Raw typed properties</summary>
+            <ul style="font-family:monospace; font-size:0.85em">
+                <li>Id: @post.Id</li>
+                <li>ContentType: @post.ContentType</li>
+                <li>Name: @post.Name</li>
+                <li>Title: @post.Title</li>
+                <li>Summary: @post.Summary</li>
+                <li>Published: @post.Published</li>
+                <li>Tags: @(post.Tags is { } t ? string.Join(", ", t) : "—")</li>
+                <li>HeroImage.Url: @(post.HeroImage?.Url ?? "—")</li>
+            </ul>
+        </details>
+    </div>
+
+    <div style="margin-top:1.5rem">
+        <h4>About this demo</h4>
+        <pre style="background:#f6f8fa; padding:1rem; border-radius:4px; overflow:auto; font-size:0.85em">@codeSnippet</pre>
+    </div>
+}
+else if (fetched)
+{
+    <p class="muted">No content found at <code>@path</code>.</p>
+}
+
+@code {
+    private string path = "/";
+    private bool loading;
+    private bool fetched;
+    private string? error;
+    private BlogPost? post;
+
+    private const string codeSnippet = """
+        public class BlogPost : ContentItemBase
+        {
+            public string? Title       => GetProperty<string>("title");
+            public string? Summary     => GetProperty<string>("summary");
+            public DateTime? Published => GetProperty<DateTime>("publishDate");
+            public string[]? Tags      => GetProperty<string[]>("tags");
+            public ApiMediaWithCropsResponseModel? HeroImage => GetImageProperty("heroImage");
+        }
+
+        // Fetching:
+        BlogPost? post = await contentService.GetContentByPathAsync<BlogPost>("/blog/my-post");
+        """;
+
+    private async Task Fetch()
+    {
+        loading = true;
+        error = null;
+        post = null;
+        fetched = false;
+
+        try
+        {
+            post = await ContentService.GetContentByPathAsync<BlogPost>(path);
+        }
+        catch (DeliveryApiException ex)
+        {
+            error = $"API error {ex.StatusCode}: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+            fetched = true;
+        }
+    }
+}
