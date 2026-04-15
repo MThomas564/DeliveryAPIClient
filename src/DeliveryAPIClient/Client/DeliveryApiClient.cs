@@ -260,7 +260,7 @@ public class DeliveryApiClient : IDeliveryApiClient
         if (allowNotFound && response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return;
 
-        if (statusCode is 400 or 401 or 403)
+        if (statusCode is >= 400 and < 500)
         {
             ProblemDetails? problem = null;
             try
@@ -312,43 +312,31 @@ public class DeliveryApiClient : IDeliveryApiClient
         return parts.Count > 0 ? "?" + string.Join("&", parts) : string.Empty;
     }
 
-    private static string BuildContentQueryString(ContentQueryParameters p)
+    private static string BuildPagedQueryString(
+        string? fetch, int skip, int take, string? expand, string? fields,
+        IReadOnlyList<string>? filter, IReadOnlyList<string>? sort)
     {
         var scalars = new Dictionary<string, string?>
         {
-            ["fetch"] = p.Fetch,
-            ["skip"] = p.Skip.ToString(),
-            ["take"] = p.Take.ToString(),
-            ["expand"] = p.Expand,
-            ["fields"] = p.Fields
+            ["fetch"] = fetch,
+            ["skip"] = skip.ToString(),
+            ["take"] = take.ToString(),
+            ["expand"] = expand,
+            ["fields"] = fields
         };
 
         var arrays = new Dictionary<string, IEnumerable<string>>();
-        if (p.Filter is { Count: > 0 })
-            arrays["filter"] = p.Filter;
-        if (p.Sort is { Count: > 0 })
-            arrays["sort"] = p.Sort;
+        if (filter is { Count: > 0 })
+            arrays["filter"] = filter;
+        if (sort is { Count: > 0 })
+            arrays["sort"] = sort;
 
         return BuildQueryStringWithArrays(scalars, arrays);
     }
+
+    private static string BuildContentQueryString(ContentQueryParameters p)
+        => BuildPagedQueryString(p.Fetch, p.Skip, p.Take, p.Expand, p.Fields, p.Filter, p.Sort);
 
     private static string BuildMediaQueryString(MediaQueryParameters p)
-    {
-        var scalars = new Dictionary<string, string?>
-        {
-            ["fetch"] = p.Fetch,
-            ["skip"] = p.Skip.ToString(),
-            ["take"] = p.Take.ToString(),
-            ["expand"] = p.Expand,
-            ["fields"] = p.Fields
-        };
-
-        var arrays = new Dictionary<string, IEnumerable<string>>();
-        if (p.Filter is { Count: > 0 })
-            arrays["filter"] = p.Filter;
-        if (p.Sort is { Count: > 0 })
-            arrays["sort"] = p.Sort;
-
-        return BuildQueryStringWithArrays(scalars, arrays);
-    }
+        => BuildPagedQueryString(p.Fetch, p.Skip, p.Take, p.Expand, p.Fields, p.Filter, p.Sort);
 }

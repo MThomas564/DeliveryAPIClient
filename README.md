@@ -1,10 +1,16 @@
 # Umbraco Delivery API Client
 
-A .NET 10 client library for the [Umbraco Content Delivery API v2](https://docs.umbraco.com/umbraco-cms/reference/content-delivery-api). Works with standard .NET applications and Blazor WASM.
+[![NuGet](https://img.shields.io/nuget/v/Umbraco.DeliveryApiClient)](https://www.nuget.org/packages/Umbraco.DeliveryApiClient)
+[![CI](https://github.com/MThomas564/DeliveryAPIClient/actions/workflows/ci.yml/badge.svg)](https://github.com/MThomas564/DeliveryAPIClient/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A strongly-typed .NET client for the [Umbraco Content Delivery API v2](https://docs.umbraco.com/umbraco-cms/reference/content-delivery-api). Supports typed content models, image crops, block lists, rich text, DI integration, and Blazor WASM. Targets .NET 8, 9, and 10.
 
 ## Installation
 
-Add a project reference to `DeliveryAPIClient.csproj`, or reference the package once published to NuGet.
+```bash
+dotnet add package Umbraco.DeliveryApiClient
+```
 
 ## Quick Start
 
