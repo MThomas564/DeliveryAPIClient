@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using DeliveryAPIClient.Models;
@@ -319,8 +320,8 @@ public class DeliveryApiClient : IDeliveryApiClient
         var scalars = new Dictionary<string, string?>
         {
             ["fetch"] = fetch,
-            ["skip"] = skip.ToString(),
-            ["take"] = take.ToString(),
+            ["skip"] = skip.ToString(CultureInfo.InvariantCulture),
+            ["take"] = take.ToString(CultureInfo.InvariantCulture),
             ["expand"] = expand,
             ["fields"] = fields
         };
