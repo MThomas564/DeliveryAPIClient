@@ -1,14 +1,11 @@
 using System.Text.Json;
+using DeliveryAPIClient.Internal;
 using DeliveryAPIClient.Models;
 
 namespace DeliveryAPIClient.Extensions;
 
 public static class ContentItemExtensions
 {
-    private static readonly JsonSerializerOptions DeserializeOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     /// <summary>
     /// Maps a raw <see cref="ApiContentResponseModel"/> to a typed subclass <typeparamref name="T"/>.
@@ -48,7 +45,7 @@ public static class ContentItemExtensions
             ApiMediaWithCropsResponseModel? media = null;
             try
             {
-                media = kvp.Value.Value.Deserialize<ApiMediaWithCropsResponseModel>(DeserializeOptions);
+                media = kvp.Value.Value.Deserialize<ApiMediaWithCropsResponseModel>(DeliveryApiJsonOptions.Default);
             }
             catch (JsonException)
             {
