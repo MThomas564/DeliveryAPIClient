@@ -7,7 +7,7 @@
     <RootNamespace>DeliveryAPIClient</RootNamespace>
 
     <!-- NuGet package metadata -->
-    <PackageId>Umbraco.DeliveryApiClient</PackageId>
+    <PackageId>Umbraco.Community.DeliveryApiClient</PackageId>
     <Authors>Matthew Thomas</Authors>
     <Description>A strongly-typed .NET client for the Umbraco Content Delivery API v2. Supports typed content models, image crops, block lists, rich text, DI integration, and Blazor WASM.</Description>
     <PackageTags>umbraco;cms;delivery-api;headless;blazor;content;media</PackageTags>
