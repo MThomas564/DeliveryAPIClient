@@ -1,6 +1,6 @@
 # Umbraco Delivery API Client
 
-[![NuGet](https://img.shields.io/nuget/v/Umbraco.DeliveryApiClient)](https://www.nuget.org/packages/Umbraco.DeliveryApiClient)
+[![NuGet](https://img.shields.io/nuget/v/Umbraco.Community.DeliveryApiClient)](https://www.nuget.org/packages/Umbraco.Community.DeliveryApiClient)
 [![CI](https://github.com/MThomas564/DeliveryAPIClient/actions/workflows/ci.yml/badge.svg)](https://github.com/MThomas564/DeliveryAPIClient/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -9,7 +9,7 @@ A strongly-typed .NET client for the [Umbraco Content Delivery API v2](https://d
 ## Installation
 
 ```bash
-dotnet add package Umbraco.DeliveryApiClient
+dotnet add package Umbraco.Community.DeliveryApiClient
 ```
 
 ## Quick Start
