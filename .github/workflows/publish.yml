@@ -28,8 +28,14 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
 
+      - name: Resolve version
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "value=${TAG#v}" >> "$GITHUB_OUTPUT"
+
       - name: Pack
-        run: dotnet pack src/DeliveryAPIClient/DeliveryAPIClient.csproj --no-build --configuration Release --output ./nupkg
+        run: dotnet pack src/DeliveryAPIClient/DeliveryAPIClient.csproj --no-build --configuration Release --output ./nupkg -p:PackageVersion=${{ steps.version.outputs.value }}
 
       - name: Push to NuGet
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
