@@ -1,14 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DeliveryAPIClient.Internal;
 
 namespace DeliveryAPIClient.Models;
 
 public class ContentItemBase
 {
-    private static readonly JsonSerializerOptions _deserializeOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
@@ -41,7 +38,7 @@ public class ContentItemBase
 
         try
         {
-            return element.Value.Deserialize<T>(_deserializeOptions);
+            return element.Value.Deserialize<T>(DeliveryApiJsonOptions.Default);
         }
         catch (JsonException)
         {
