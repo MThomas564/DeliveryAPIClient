@@ -22,7 +22,8 @@ public class DeliveryApiOptions
 
     /// <summary>
     /// Default culture variant to request, e.g. <c>en-us</c>.
-    /// Can be overridden per-request via the <c>language</c> parameter.
-    /// </summary>
+    /// Applied as the <c>Accept-Language</c> request header and can be overridden
+    /// per-request via the <c>language</c> argument or <c>ContentQueryParameters.Language</c>.
+    ///</summary>
     public string? DefaultLanguage { get; set; }
 }
